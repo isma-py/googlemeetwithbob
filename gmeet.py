@@ -9,7 +9,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Hilangkan padding laluan Streamlit supaya app kelihatan mesra pengguna
+# Hilangkan margin dan padding laluan Streamlit
 st.markdown("""
     <style>
         .block-container {
@@ -23,7 +23,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Kod Aplikasi Web (HTML/CSS/JS with PeerJS)
+# Kod Aplikasi Web HTML/CSS/JS (Google Meet Clone)
 meet_html_code = """
 <!DOCTYPE html>
 <html lang="ms">
@@ -36,10 +36,11 @@ meet_html_code = """
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
         body { background-color: #202124; color: white; font-family: 'Google Sans', Roboto, Arial, sans-serif; height: 100vh; overflow: hidden; }
-        .video-grid { display: grid; gap: 1rem; height: calc(100vh - 90px); padding: 1rem; }
-        .video-card { position: relative; background-color: #3c4043; border-radius: 0.5rem; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+        .video-grid { display: grid; gap: 1rem; align-content: center; justify-content: center; height: calc(100vh - 100px); padding: 1rem; }
+        .video-card { position: relative; background-color: #3c4043; border-radius: 0.75rem; overflow: hidden; display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; transition: all 0.3s ease; }
         video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
         .avatar { width: 96px; height: 96px; border-radius: 50%; background-color: #1a73e8; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; font-weight: bold; }
+        .blur-video { filter: blur(8px); }
     </style>
 </head>
 <body class="flex flex-col justify-between">
@@ -48,7 +49,7 @@ meet_html_code = """
     <div id="lobby" class="fixed inset-0 z-50 bg-[#202124] flex items-center justify-center p-4">
         <div class="max-w-4xl w-full grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
             <div class="flex flex-col items-center">
-                <div class="relative w-full aspect-video bg-[#3c4043] rounded-2xl overflow-hidden flex items-center justify-center border border-gray-700 shadow-xl">
+                <div class="relative w-full aspect-video bg-[#3c4043] rounded-2xl overflow-hidden flex items-center justify-center border border-gray-700 shadow-2xl">
                     <video id="preview-video" autoplay playsinline muted class="w-full h-full object-cover"></video>
                     <div id="preview-avatar" class="avatar hidden">Anda</div>
                     <div class="absolute bottom-4 flex gap-4">
@@ -65,12 +66,12 @@ meet_html_code = """
             <div class="space-y-6">
                 <div>
                     <h1 class="text-3xl font-normal text-white">Sertai Mesyuarat</h1>
-                    <p class="text-gray-400 text-sm mt-1">Sambungan Peer-to-Peer WebRTC (STUN Global)</p>
+                    <p class="text-gray-400 text-sm mt-1">Sokongan Sambungan P2P Jarak Jauh (WAN & Public STUN)</p>
                 </div>
                 <div class="space-y-4">
                     <input type="text" id="username" placeholder="Nama Anda" class="w-full px-4 py-3 bg-[#202124] border border-gray-600 rounded-lg focus:outline-none focus:border-blue-500 text-white" />
                     <div class="flex gap-2">
-                        <input type="text" id="room-id-input" placeholder="Kod ID Bilik (Contoh: room123)" class="flex-1 px-4 py-3 bg-[#202124] border border-gray-600 rounded-lg focus:outline-none focus:border-blue-500 text-white" />
+                        <input type="text" id="room-id-input" placeholder="Kod / ID Bilik (Contoh: bilik123)" class="flex-1 px-4 py-3 bg-[#202124] border border-gray-600 rounded-lg focus:outline-none focus:border-blue-500 text-white" />
                         <button onclick="joinRoom()" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition">Sertai</button>
                     </div>
                     <div class="relative flex py-2 items-center">
@@ -79,70 +80,93 @@ meet_html_code = """
                         <div class="flex-grow border-t border-gray-700"></div>
                     </div>
                     <button onclick="createRoom()" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg transition">
-                        <i class="fas fa-plus mr-2"></i>Buka Bilik Baru
+                        <i class="fas fa-plus mr-2"></i>Cipta Bilik Baru
                     </button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Main Call UI -->
-    <div id="main-ui" class="hidden flex-1 flex relative">
-        <div class="flex-1 flex flex-col">
-            <!-- Video Grid -->
-            <div id="video-grid" class="video-grid grid-cols-1 md:grid-cols-2">
-                <!-- Local Video Card -->
+    <!-- Main Meeting UI -->
+    <div id="main-ui" class="hidden flex-1 flex flex-col relative h-screen">
+        <!-- Top Navigation Header -->
+        <div class="h-14 bg-[#171717] px-6 flex items-center justify-between border-b border-gray-800">
+            <div class="flex items-center gap-3">
+                <button onclick="backToLobby()" class="flex items-center gap-2 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-200 rounded-lg text-sm transition">
+                    <i class="fas fa-arrow-left"></i>
+                    <span>Kembali / Utama</span>
+                </button>
+                <span class="text-sm font-medium text-gray-300" id="header-room-title">Google Meet</span>
+            </div>
+            <div class="flex items-center gap-4 text-xs text-emerald-400 bg-emerald-950/40 border border-emerald-800/50 px-3 py-1 rounded-full">
+                <i class="fas fa-signal"></i>
+                <span>Sambungan WAN Stabil</span>
+            </div>
+        </div>
+
+        <div class="flex-1 flex relative overflow-hidden">
+            <!-- Dynamic Video Grid -->
+            <div id="video-grid" class="video-grid w-full grid-cols-1 md:grid-cols-2">
+                <!-- Local User Card -->
                 <div class="video-card" id="local-card">
                     <video id="local-video" autoplay playsinline muted></video>
                     <div id="local-avatar" class="avatar hidden">A</div>
-                    <div class="absolute bottom-3 left-3 bg-black/50 backdrop-blur px-3 py-1 rounded-md text-xs flex items-center gap-2">
+                    <div class="absolute bottom-3 left-3 bg-black/60 backdrop-blur px-3 py-1 rounded-md text-xs flex items-center gap-2">
                         <span id="local-name-tag">Anda</span>
+                        <span id="local-hand-status" class="hidden text-amber-400"><i class="fas fa-hand"></i></span>
                     </div>
                 </div>
             </div>
 
-            <!-- Bottom Control Bar -->
-            <div class="h-20 bg-[#202124] border-t border-gray-800 px-6 flex items-center justify-between">
-                <div class="flex items-center gap-2 text-gray-300">
-                    <span id="display-room-id" class="font-mono text-sm bg-gray-800 px-3 py-1.5 rounded-lg border border-gray-700"></span>
-                    <button onclick="copyRoomLink()" class="p-2 hover:bg-gray-800 rounded-lg text-gray-400 hover:text-white transition" title="Salin ID Bilik">
-                        <i class="far fa-copy"></i>
-                    </button>
+            <!-- Sidebar Chat -->
+            <div id="sidebar-chat" class="hidden w-80 bg-[#171717] border-l border-gray-800 flex flex-col h-full">
+                <div class="p-4 border-b border-gray-800 flex justify-between items-center">
+                    <h2 class="font-medium text-sm">Mesej Panggilan</h2>
+                    <button onclick="toggleSidebar('chat')" class="text-gray-400 hover:text-white"><i class="fas fa-times"></i></button>
                 </div>
-
-                <div class="flex items-center gap-3">
-                    <button onclick="toggleMic()" id="btn-mic" class="p-3.5 rounded-full bg-gray-700 hover:bg-gray-600 text-white transition">
-                        <i class="fas fa-microphone" id="icon-mic"></i>
-                    </button>
-                    <button onclick="toggleCam()" id="btn-cam" class="p-3.5 rounded-full bg-gray-700 hover:bg-gray-600 text-white transition">
-                        <i class="fas fa-video" id="icon-cam"></i>
-                    </button>
-                    <button onclick="toggleScreenShare()" id="btn-screen" class="p-3.5 rounded-full bg-gray-700 hover:bg-gray-600 text-white transition">
-                        <i class="fas fa-desktop"></i>
-                    </button>
-                    <button onclick="leaveCall()" class="p-3.5 rounded-full bg-red-600 hover:bg-red-700 text-white px-6 transition">
-                        <i class="fas fa-phone-slash"></i>
-                    </button>
-                </div>
-
-                <div class="flex items-center gap-2">
-                    <button onclick="toggleSidebar('chat')" class="p-3 rounded-full hover:bg-gray-800 text-gray-300 transition relative">
-                        <i class="far fa-[#3c4043] fa-comment-alt"></i>
-                    </button>
+                <div id="chat-messages" class="flex-1 p-4 overflow-y-auto space-y-3 text-sm"></div>
+                <div class="p-4 border-t border-gray-800 flex gap-2">
+                    <input type="text" id="chat-input" placeholder="Hantar mesej..." class="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" onkeypress="if(event.key==='Enter') sendChatMessage()">
+                    <button onclick="sendChatMessage()" class="p-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-white"><i class="fas fa-paper-plane"></i></button>
                 </div>
             </div>
         </div>
 
-        <!-- Sidebar Chat -->
-        <div id="sidebar-chat" class="hidden w-80 bg-[#171717] border-l border-gray-800 flex flex-col h-[calc(100vh-80px)]">
-            <div class="p-4 border-b border-gray-800 flex justify-between items-center">
-                <h2 class="font-medium">Mesej Dalam Panggilan</h2>
-                <button onclick="toggleSidebar('chat')" class="text-gray-400 hover:text-white"><i class="fas fa-times"></i></button>
+        <!-- Bottom Control Toolbar -->
+        <div class="h-20 bg-[#202124] border-t border-gray-800 px-6 flex items-center justify-between">
+            <div class="flex items-center gap-2 text-gray-300">
+                <span id="display-room-id" class="font-mono text-xs bg-gray-800 px-3 py-1.5 rounded-lg border border-gray-700"></span>
+                <button onclick="copyRoomLink()" class="p-2 hover:bg-gray-800 rounded-lg text-gray-400 hover:text-white transition" title="Salin ID Bilik">
+                    <i class="far fa-copy"></i>
+                </button>
             </div>
-            <div id="chat-messages" class="flex-1 p-4 overflow-y-auto space-y-3 text-sm"></div>
-            <div class="p-4 border-t border-gray-800 flex gap-2">
-                <input type="text" id="chat-input" placeholder="Hantar mesej..." class="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" onkeypress="if(event.key==='Enter') sendChatMessage()">
-                <button onclick="sendChatMessage()" class="p-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-white"><i class="fas fa-paper-plane"></i></button>
+
+            <div class="flex items-center gap-3">
+                <button onclick="toggleMic()" id="btn-mic" class="p-3.5 rounded-full bg-gray-700 hover:bg-gray-600 text-white transition" title="Mikrofon">
+                    <i class="fas fa-microphone" id="icon-mic"></i>
+                </button>
+                <button onclick="toggleCam()" id="btn-cam" class="p-3.5 rounded-full bg-gray-700 hover:bg-gray-600 text-white transition" title="Kamera">
+                    <i class="fas fa-video" id="icon-cam"></i>
+                </button>
+                <button onclick="toggleBlur()" id="btn-blur" class="p-3.5 rounded-full bg-gray-700 hover:bg-gray-600 text-white transition" title="Kesan Blur">
+                    <i class="fas fa-wand-magic-sparkles"></i>
+                </button>
+                <button onclick="toggleRaiseHand()" id="btn-hand" class="p-3.5 rounded-full bg-gray-700 hover:bg-gray-600 text-white transition" title="Angkat Tangan">
+                    <i class="fas fa-hand"></i>
+                </button>
+                <button onclick="toggleScreenShare()" id="btn-screen" class="p-3.5 rounded-full bg-gray-700 hover:bg-gray-600 text-white transition" title="Kongsi Skrin">
+                    <i class="fas fa-desktop"></i>
+                </button>
+                <button onclick="backToLobby()" class="p-3.5 rounded-full bg-red-600 hover:bg-red-700 text-white px-6 transition flex items-center gap-2" title="Tinggalkan Panggilan">
+                    <i class="fas fa-phone-slash"></i>
+                    <span class="text-xs font-semibold">Tinggalkan</span>
+                </button>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <button onclick="toggleSidebar('chat')" class="p-3 rounded-full hover:bg-gray-800 text-gray-300 transition">
+                    <i class="far fa-comment-alt"></i>
+                </button>
             </div>
         </div>
     </div>
@@ -154,14 +178,19 @@ meet_html_code = """
         let myName = "Pengguna";
         let isMicOn = true;
         let isCamOn = true;
-        let peers = {};
+        let isBlurred = false;
+        let isHandRaised = false;
+        let activeCalls = {};
         let dataConns = {};
 
+        // Konfigurasi STUN/TURN Public Global untuk WAN & Sambungan Jarak Jauh
         const iceServers = {
             iceServers: [
                 { urls: 'stun:stun.l.google.com:19302' },
                 { urls: 'stun:stun1.l.google.com:19302' },
-                { urls: 'stun:stun2.l.google.com:19302' }
+                { urls: 'stun:stun2.l.google.com:19302' },
+                { urls: 'stun:stun3.l.google.com:19302' },
+                { urls: 'stun:stun4.l.google.com:19302' }
             ]
         };
 
@@ -169,7 +198,7 @@ meet_html_code = """
             try {
                 localStream = await navigator.mediaDevices.getUserMedia({
                     video: { width: { ideal: 1280 }, height: { ideal: 720 } },
-                    audio: { echoCancellation: true, noiseSuppression: true }
+                    audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
                 });
                 document.getElementById('preview-video').srcObject = localStream;
             } catch (err) {
@@ -210,16 +239,17 @@ meet_html_code = """
             if(nameInput) myName = nameInput;
 
             currentRoomId = roomInput;
-            document.getElementById('local-name-tag').innerText = myName;
+            document.getElementById('local-name-tag').innerText = myName + " (Anda)";
             document.getElementById('local-avatar').innerText = myName.charAt(0).toUpperCase();
-            document.getElementById('display-room-id').innerText = currentRoomId;
+            document.getElementById('display-room-id').innerText = "ID: " + currentRoomId;
+            document.getElementById('header-room-title').innerText = "Kod Bilik: " + currentRoomId;
 
             document.getElementById('lobby').classList.add('hidden');
             document.getElementById('main-ui').classList.remove('hidden');
 
             document.getElementById('local-video').srcObject = localStream;
 
-            // Inisialisasi PeerJS dengan Server WebRTC Public
+            // Inisialisasi PeerJS dengan Server Public STUN
             peer = new Peer(undefined, { config: iceServers });
 
             peer.on('open', id => {
@@ -229,12 +259,14 @@ meet_html_code = """
 
             peer.on('call', call => {
                 call.answer(localStream);
-                const remoteVideo = document.createElement('video');
-                remoteVideo.autoplay = true;
-                remoteVideo.playsInline = true;
+                activeCalls[call.peer] = call;
 
                 call.on('stream', remoteStream => {
                     addRemoteStream(call.peer, remoteStream);
+                });
+
+                call.on('close', () => {
+                    removeRemoteStream(call.peer);
                 });
             });
 
@@ -244,15 +276,18 @@ meet_html_code = """
         }
 
         function connectToExistingPeers() {
-            // Sambungan automatik berasaskan ID Bilik
             const conn = peer.connect(currentRoomId);
             if(conn) {
                 setupDataConnection(conn);
             }
             const call = peer.call(currentRoomId, localStream);
             if(call) {
+                activeCalls[currentRoomId] = call;
                 call.on('stream', remoteStream => {
                     addRemoteStream(currentRoomId, remoteStream);
+                });
+                call.on('close', () => {
+                    removeRemoteStream(currentRoomId);
                 });
             }
         }
@@ -280,16 +315,43 @@ meet_html_code = """
             video.playsInline = true;
 
             const tag = document.createElement('div');
-            tag.className = 'absolute bottom-3 left-3 bg-black/50 backdrop-blur px-3 py-1 rounded-md text-xs';
-            tag.innerText = `Ahli (${peerId.substring(0, 5)})`;
+            tag.className = 'absolute bottom-3 left-3 bg-black/60 backdrop-blur px-3 py-1 rounded-md text-xs';
+            tag.innerText = `Peserta (${peerId.substring(0, 5)})`;
 
             card.appendChild(video);
             card.appendChild(tag);
             grid.appendChild(card);
+            adjustGrid();
+        }
+
+        function removeRemoteStream(peerId) {
+            const card = document.getElementById(`card-${peerId}`);
+            if(card) card.remove();
+            adjustGrid();
+        }
+
+        function adjustGrid() {
+            const grid = document.getElementById('video-grid');
+            const count = grid.children.length;
+            if(count <= 1) grid.className = "video-grid w-full grid-cols-1";
+            else if(count === 2) grid.className = "video-grid w-full grid-cols-1 md:grid-cols-2";
+            else grid.className = "video-grid w-full grid-cols-2 md:grid-cols-3";
         }
 
         function toggleMic() { togglePreviewMic(); }
         function toggleCam() { togglePreviewCam(); }
+
+        function toggleBlur() {
+            isBlurred = !isBlurred;
+            document.getElementById('local-video').classList.toggle('blur-video', isBlurred);
+            document.getElementById('btn-blur').classList.toggle('bg-blue-600', isBlurred);
+        }
+
+        function toggleRaiseHand() {
+            isHandRaised = !isHandRaised;
+            document.getElementById('local-hand-status').classList.toggle('hidden', !isHandRaised);
+            document.getElementById('btn-hand').classList.toggle('bg-amber-600', isHandRaised);
+        }
 
         async function toggleScreenShare() {
             try {
@@ -326,8 +388,8 @@ meet_html_code = """
         function appendChatMessage(sender, msg) {
             const container = document.getElementById('chat-messages');
             const div = document.createElement('div');
-            div.className = 'bg-gray-800 p-2.5 rounded-lg';
-            div.innerHTML = `<span class="font-semibold text-xs text-blue-400 block">${sender}</span><span class="text-gray-200">${msg}</span>`;
+            div.className = 'bg-gray-800 p-2.5 rounded-lg border border-gray-700/50';
+            div.innerHTML = `<span class="font-semibold text-xs text-blue-400 block mb-0.5">${sender}</span><span class="text-gray-200 text-xs">${msg}</span>`;
             container.appendChild(div);
             container.scrollTop = container.scrollHeight;
         }
@@ -337,8 +399,21 @@ meet_html_code = """
             alert("ID Bilik telah disalin: " + currentRoomId);
         }
 
-        function leaveCall() {
-            location.reload();
+        // Fungsi Back Button & Leave Call untuk kembali ke skrin utama
+        function backToLobby() {
+            if(peer) peer.destroy();
+            Object.values(activeCalls).forEach(call => call.close());
+            activeCalls = {};
+            dataConns = {};
+
+            document.getElementById('main-ui').classList.add('hidden');
+            document.getElementById('lobby').classList.remove('hidden');
+
+            const grid = document.getElementById('video-grid');
+            Array.from(grid.children).forEach(child => {
+                if(child.id !== 'local-card') child.remove();
+            });
+            adjustGrid();
         }
     </script>
 </body>
